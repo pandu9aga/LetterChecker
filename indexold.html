@@ -1,0 +1,42 @@
+<html>
+    <header>
+        <style>
+            #display-image{
+                width: 400px;
+                height: 225px;
+                border: 1px solid black;
+                background-position: center;
+                background-size: cover;
+            }
+        </style>
+    </header>
+    <body>
+        <input type="file" id="image-input" accept="image/jpeg, image/png, image/jpg"><div id="display-image"></div>
+        <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest"></script>
+        <script>model = await tf.loadModel('model/model.json')</script>
+        <script>
+            const image_input = document.querySelector("#image-input");image_input.addEventListener("change", function() {
+            const reader = new FileReader();
+            reader.addEventListener("load", () => {
+                const uploaded_image = reader.result;
+                document.querySelector("#display-image").style.backgroundImage = `url(${uploaded_image})`;
+            });
+            reader.readAsDataURL(this.files[0]);
+            });
+
+            function preprocess(img){
+                //convert the image data to a tensor 
+                let tensor = tf.fromPixels(img)
+                //resize to 50 X 50
+                const resized = tf.image.resizeBilinear(tensor, [50, 50]).toFloat()
+                // Normalize the image 
+                const offset = tf.scalar(255.0);
+                const normalized = tf.scalar(1.0).sub(resized.div(offset));
+                //We add a dimension to get a batch shape 
+                const batched = normalized.expandDims(0)
+                return batched
+            }
+            const pred = model.predict(preprocess(img)).dataSync()
+        </script>    
+    </body>
+</html>
